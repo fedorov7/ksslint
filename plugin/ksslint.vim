@@ -75,7 +75,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/\(\s*\)\(if\s*(\p\+)\)\s*\n\([^{]\+\)\n/\1\2\ \{\r\3\r\1\}\r/gc
+    :%s/\(\s*\)\(if\s*(\p\+)\)\s*\n\([^{]\+;\)\n/\1\2\ \{\r\3\r\1\}\r/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("if bracket is OK")
   endtry
@@ -87,7 +87,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/\(\s*\)\(\}\s\+else\)\n\([^{]\+\)/\1\2\ \{\r\3\r\1\}\r/gc
+    :%s/\(\s*\)\(\}\s\+else\)\n\([^{]\+;\)/\1\2\ \{\r\3\r\1\}\r/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("else bracket is OK")
   endtry
@@ -96,6 +96,12 @@ function! KssLint()
     :%s/\(#define\s\+\w\+\)\s\+\((\(\w\|,\|\s\)\+)\)\(\s\+\S\)/\1\2\4/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("#define macros OK")
+  endtry
+
+  try
+    :%s/DBG_EXIT_STATUS.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_EFI_STATUS\ (\1);/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("DBG_EXIT_STATUS macros not found")
   endtry
 
 endfun
