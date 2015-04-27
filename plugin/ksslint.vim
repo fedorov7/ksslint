@@ -13,6 +13,14 @@ function! s:OkMessage(message)
   :echohl None
 endfun
 
+function! s:Substitution(bad,good)
+  :exec "1,$substitute/".a:bad."/".a:good."/gc"
+endfunction
+
+function! KssLintTest()
+  call s:Substitution("a", "b")
+endfunction
+
 function! KssLint()
   try
     :%s/DEBUG\s*((\_.\=\s*EFI_D_\(\w\+\),\s\=\("\p\+"\),\s\=\(\p\+\)))/DBG_\1\ (\2,\ \3)/gc
