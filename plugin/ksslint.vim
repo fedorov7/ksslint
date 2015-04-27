@@ -51,25 +51,25 @@ function! KssLint()
 "  endtry
 
   try
-    :%s/(\s\+\(\w\+\)/(\1/gc
+    :%s/(\s\+\(\S\+\)/(\1/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("Left Bracer is OK")
   endtry
 
   try
-    :%s/\(\w\+\)\s\+)/\1)/gc
+    :%s/\(\S\+\)\s\+)/\1)/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("Rigth Bracer is OK")
   endtry
 
   try
-    :%s/\[\s\+\(\w\+\)/\[\1/gc
+    :%s/\[\s\+\(\S\+\)/\[\1/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("Left Bracket is OK")
   endtry
 
   try
-    :%s/\(\w\+\)\s\+\]/\1\]/gc
+    :%s/\(\S\+\)\s\+\]/\1\]/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("Rigth Bracket is OK")
   endtry
@@ -90,6 +90,12 @@ function! KssLint()
     :%s/\(\s*\)\(\}\s\+else\)\n\([^{]\+\)/\1\2\ \{\r\3\r\1\}\r/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("else bracket is OK")
+  endtry
+
+  try
+    :%s/\(#define\s\+\w\+\)\s\+\((\(\w\|,\|\s\)\+)\)\(\s\+\S\)/\1\2\4/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("#define macros OK")
   endtry
 
 endfun
