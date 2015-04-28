@@ -8,17 +8,41 @@ endif
 let g:loaded_ksslint = 1
 
 function! s:OkMessage(message)
-  :echohl Special
-  :echo a:message
-  :echohl None
+""  :echohl Special
+""  :echo a:message
+""  :echohl None
 endfun
 
 function! s:Substitution(bad,good)
-  :exec "1,$substitute/".a:bad."/".a:good."/gc"
+  :echo 'pattern '.a:bad.' apply'
+  :echo 'executing 1,$substitute/'.a:bad.'/'.a:good.'/gc'
+  try
+    :exec '1,$substitute/'.a:bad.'/'.a:good.'/gc'
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    :echo 'pattern '.a:bad.' not found'
+  endtry
 endfunction
 
-function! KssLintTest()
-  call s:Substitution("a", "b")
+function! s:ReplaceIfReturnStatus()
+  let retval = 0
+  try
+    :%s/if\s*\((\p\+)\)\s*{\n\s*return\s*\(\p\+\);\n\s*}/RETURN_IF\ (\1,\ \2);/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    let retval = 1
+  endtry
+  return retval
+endfunction
+
+function! s:ReplaceReturnStatus()
+  let statuses = ['Status', 'EFI_SUCCESS', 'EFI_LOAD_ERROR', 'EFI_INVALID_PARAMETER', 'EFI_UNSUPPORTED', 'EFI_BAD_BUFFER_SIZE', 'EFI_BUFFER_TOO_SMALL', 'EFI_NOT_READY', 'EFI_DEVICE_ERROR', 'EFI_WRITE_PROTECTED', 'EFI_OUT_OF_RESOURCES', 'EFI_VOLUME_CORRUPTED', 'EFI_VOLUME_FULL', 'EFI_NO_MEDIA', 'EFI_MEDIA_CHANGED', 'EFI_NOT_FOUND', 'EFI_ACCESS_DENIED', 'EFI_NO_RESPONSE', 'EFI_NO_MAPPING', 'EFI_TIMEOUT', 'EFI_NOT_STARTED', 'EFI_ALREADY_STARTED', 'EFI_ABORTED', 'EFI_ICMP_ERROR', 'EFI_TFTP_ERROR', 'EFI_PROTOCOL_ERROR', 'EFI_INCOMPATIBLE_VERSION', 'EFI_SECURITY_VIOLATION', 'EFI_CRC_ERROR', 'EFI_END_OF_MEDIA', 'EFI_END_OF_FILE', 'EFI_INVALID_LANGUAGE', 'EFI_COMPROMISED_DATA', 'EFI_WARN_UNKNOWN_GLYPH', 'EFI_WARN_DELETE_FAILURE', 'EFI_WARN_WRITE_FAILURE', 'EFI_WARN_BUFFER_TOO_SMALL', 'EFI_WARN_STALE_DATA']
+  for status in statuses
+    call s:Substitution('return\s*\(\=\('.status.'\))\=;', 'RETURN_EFI_STATUS\ (\1)')
+  end
+endfunction
+
+function! KssMacroReplace()
+  call s:ReplaceIfReturnStatus()
+  call s:ReplaceReturnStatus()
 endfunction
 
 function! KssLint()
@@ -115,3 +139,4 @@ function! KssLint()
 endfun
 
 nnoremap <F4> :call KssLint()<CR>
+nnoremap <F5> :call KssMacroReplace()<CR>
