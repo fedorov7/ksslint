@@ -22,21 +22,26 @@ function s:Substitution(bad, good) range "Step through each line in the range...
   endfor
 endfunction
 
-function! s:ReplaceIfReturnStatus()
-  let retval = 0
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*return\s*\(\p\+\);\n\s*}/RETURN_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    let retval = 1
-  endtry
-  return retval
-endfunction
-
 function! s:ReplaceReturnStatus()
   let statuses = ['Status', 'EFI_SUCCESS', 'EFI_LOAD_ERROR', 'EFI_INVALID_PARAMETER', 'EFI_UNSUPPORTED', 'EFI_BAD_BUFFER_SIZE', 'EFI_BUFFER_TOO_SMALL', 'EFI_NOT_READY', 'EFI_DEVICE_ERROR', 'EFI_WRITE_PROTECTED', 'EFI_OUT_OF_RESOURCES', 'EFI_VOLUME_CORRUPTED', 'EFI_VOLUME_FULL', 'EFI_NO_MEDIA', 'EFI_MEDIA_CHANGED', 'EFI_NOT_FOUND', 'EFI_ACCESS_DENIED', 'EFI_NO_RESPONSE', 'EFI_NO_MAPPING', 'EFI_TIMEOUT', 'EFI_NOT_STARTED', 'EFI_ALREADY_STARTED', 'EFI_ABORTED', 'EFI_ICMP_ERROR', 'EFI_TFTP_ERROR', 'EFI_PROTOCOL_ERROR', 'EFI_INCOMPATIBLE_VERSION', 'EFI_SECURITY_VIOLATION', 'EFI_CRC_ERROR', 'EFI_END_OF_MEDIA', 'EFI_END_OF_FILE', 'EFI_INVALID_LANGUAGE', 'EFI_COMPROMISED_DATA', 'EFI_WARN_UNKNOWN_GLYPH', 'EFI_WARN_DELETE_FAILURE', 'EFI_WARN_WRITE_FAILURE', 'EFI_WARN_BUFFER_TOO_SMALL', 'EFI_WARN_STALE_DATA']
   for status in statuses
     :%call s:Substitution('return\s*(*\('.status.'\))*;', 'RETURN_EFI_STATUS\ (\1);')
   endfor
+endfunction
+
+function! s:ReplaceReturnBoolean()
+  let booleans = ['TRUE', 'FALSE']
+  for bool in booleans
+    :%call s:Substitution('return\s*(*\('.bool.'\))*;', 'RETURN_BOOLEAN\ (\1);')
+  endfor
+endfunction
+
+function! s:ReplaceReturnPointer()
+  :%call s:Substitution('return\s*(*\(NULL\))*;', 'RETURN_POINTER\ (\1);')
+endfunction
+
+function! s:ReplaceReturnNumber()
+  :%call s:Substitution('return\s*(*\(\d\+\))*;', 'RETURN_NUMBER\ (\1);')
 endfunction
 
 function! s:ReplaceFreePool()
@@ -48,8 +53,10 @@ function! s:ReplaceEfiError()
 endfunction
 
 function! KssMacroReplace()
-  call s:ReplaceIfReturnStatus()
   call s:ReplaceReturnStatus()
+  call s:ReplaceReturnBoolean()
+  call s:ReplaceReturnPointer()
+  call s:ReplaceReturnNumber()
   call s:ReplaceFreePool()
   call s:ReplaceEfiError()
   echohl Special
@@ -93,6 +100,24 @@ function! KssLint()
 "  catch /\m^Vim\%((\a\+)\)\=:E486/
 "    call s:OkMessage("Macros-Bracer spaces is OK")
 "  endtry
+"
+  try
+    :%s/\(for\s*(\p\+)\)\s*\n\s*{\s*$/\1\ {/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("for Bracer is OK")
+  endtry
+
+  try
+    :%s/\(while\s*(\p\+)\)\s*\n\s*{\s*$/\1\ {/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("while Bracer is OK")
+  endtry
+
+  try
+    :%s/\(if\s*(\p\+)\)\s*\n\s*{\s*$/\1\ {/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("if Bracer is OK")
+  endtry
 
   try
     :%s/(\s\+\(\S\+\)/(\1/gc
@@ -149,7 +174,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STATUS\s*\(\p\+\);\n\s*}/RETURN_IF\ (\1,\ \2);/gc
+    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STATUS\s*(\(\p\+\));\n\s*}/RETURN_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_EFI_STATUS macros not found")
   endtry
@@ -161,7 +186,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_NUMBER\s*\(\p\+\);\n\s*}/RETURN_NUMBER_IF\ (\1,\ \2);/gc
+    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_NUMBER\s*(\(\p\+\));\n\s*}/RETURN_NUMBER_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_NUMBER macros not found")
   endtry
@@ -173,7 +198,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_HEX\s*\(\p\+\);\n\s*}/RETURN_HEX_IF\ (\1,\ \2);/gc
+    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_HEX\s*(\(\p\+\));\n\s*}/RETURN_HEX_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_HEX macros not found")
   endtry
@@ -185,7 +210,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STRING\s*\(\p\+\);\n\s*}/RETURN_EFI_STRING_IF\ (\1,\ \2);/gc
+    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STRING\s*(\(\p\+\));\n\s*}/RETURN_EFI_STRING_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_EFI_STRING macros not found")
   endtry
@@ -197,7 +222,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_BOOLEAN\s*\(\p\+\);\n\s*}/RETURN_BOOLEAN_IF\ (\1,\ \2);/gc
+    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_BOOLEAN\s*(\(\p\+\));\n\s*}/RETURN_BOOLEAN_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_BOOLEAN macros not found")
   endtry
@@ -209,7 +234,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_POINTER\s*\(\p\+\);\n\s*}/RETURN_POINTER_IF\ (\1,\ \2);/gc
+    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_POINTER\s*(\(\p\+\));\n\s*}/RETURN_POINTER_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_POINTER macros not found")
   endtry
