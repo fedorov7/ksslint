@@ -18,7 +18,9 @@ function s:Substitution(bad, good) range "Step through each line in the range...
   for linenum in range(a:firstline, a:lastline)
     let curr_line   = getline(linenum)
     let replacement = substitute(curr_line, a:bad, a:good,'gc')
-    call setline(linenum, replacement)
+    if curr_line != replacement
+      call setline(linenum, replacement)
+    endif
   endfor
 endfunction
 
@@ -95,6 +97,18 @@ function! KssLint()
     call s:OkMessage("Function-Bracer spaces is OK")
   endtry
 
+  try
+    :%s/\n\n\n/\r\r/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Blank strings is OK")
+  endtry
+
+  try
+    :%s/\n\s*\/\/\s*$//gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Empty comments is OK")
+  endtry
+
 "  try
 "    :%s/\(\u\)\s\+(/\1(/gc
 "  catch /\m^Vim\%((\a\+)\)\=:E486/
@@ -156,7 +170,7 @@ function! KssLint()
   endtry
 
   try
-    :%s/\(\s*\)\(\}\s\+else\)\n\([^{]\+;\)/\1\2\ \{\r\3\r\1\}\r/gc
+    :%s/\(\s*\)\(\}\s\+else\)\(\n\|\s*\)\([^{]\+;\)/\1\2\ \{\r\4\r\1\}\r/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("else bracket is OK")
   endtry
@@ -237,6 +251,18 @@ function! KssLint()
     :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_POINTER\s*(\(\p\+\));\n\s*}/RETURN_POINTER_IF\ (\1,\ \2);/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("RETURN_POINTER macros not found")
+  endtry
+
+  try
+    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*\(0\|NULL\)/!\1/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Null value comparison not found")
+  endtry
+
+  try
+    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*\(0\|NULL\)/\1/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Not null value comparison not found")
   endtry
 
   echohl Special
