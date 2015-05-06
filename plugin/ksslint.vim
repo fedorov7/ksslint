@@ -54,6 +54,16 @@ function! s:ReplaceEfiError()
   :%call s:Substitution('RETURN_IF\s*((\=EFI_ERROR\s*(Status))\=,\s*Status);', 'RETURN_IF_EFI_ERROR\ (Status);')
 endfunction
 
+function! s:ReplaceGotoEfiError()
+  :%call s:Substitution('GOTO_IF\s*((\=EFI_ERROR\s*(Status))\=\(,\s*\w\+\),\s*Status\(\p*\));', 'GOTO_IF_EFI_ERROR\ (Status\1\2);')
+endfunction
+
+function! s:ReplaceIfNull()
+  :%call s:Substitution('\(\(\u\|_\)\+_IF\)\s*((\=\(\w\+\)\s*==\s*NULL)\=\(\p\+\));', '\1\_NULL (\3\4);')
+  :%call s:Substitution('\(\(\u\|_\)\+_IF\)\s*((\=NULL\s*==\s*\(\w\+\))\=\(\p\+\));', '\1\_NULL (\3\4);')
+endfunction
+
+
 function! KssMacroReplace()
   call s:ReplaceReturnStatus()
   call s:ReplaceReturnBoolean()
@@ -61,6 +71,8 @@ function! KssMacroReplace()
   call s:ReplaceReturnNumber()
   call s:ReplaceFreePool()
   call s:ReplaceEfiError()
+  call s:ReplaceGotoEfiError()
+  call s:ReplaceIfNull()
   echohl Special
   echo "Done"
   echohl None
@@ -74,9 +86,15 @@ function! KssLint()
   endtry
 
   try
-    :%s/\(DEBUG\s*((\_.\=\s*EFI_D_\)\(\w\+\),\s\=\("\p\+"\)))/DBG_\21\ (\3)/gc
+    :%s/\(DEBUG\s*((\_.\=\s*EFI_D_\)\(\w\+\),\s\=\("\p\+"\)))/DBG_\2\ (\3)/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("DEBUG short macros is OK")
+  endtry
+
+  try
+    :%s/\(DBG_\w\+\)1/\1/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("DBG short macros is OK")
   endtry
 
   try
@@ -254,15 +272,39 @@ function! KssLint()
   endtry
 
   try
-    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*\(0\|NULL\)/!\1/gc
+    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*0/!\1/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("Null value comparison not found")
   endtry
 
   try
-    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*\(0\|NULL\)/\1/gc
+    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0/\1/gc
   catch /\m^Vim\%((\a\+)\)\=:E486/
     call s:OkMessage("Not null value comparison not found")
+  endtry
+
+  try
+    :%s/if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*break;\n\s*}/BREAK_IF_EFI_ERROR\ \2;/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Break if EFI_ERROR macros not found")
+  endtry
+
+  try
+    :%s/if\s*\((\p\+)\)\s*{\n\s*break;\n\s*}/BREAK_IF\ \1;/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Break if macros not found")
+  endtry
+
+  try
+    :%s/if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*continue;\n\s*}/CONTINUE_IF_EFI_ERROR\ \2;/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Continue if EFI_ERROR macros not found")
+  endtry
+
+  try
+    :%s/if\s*\((\p\+)\)\s*{\n\s*continue;\n\s*}/CONTINUE_IF\ \1;/gc
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Continue if macros not found")
   endtry
 
   echohl Special
