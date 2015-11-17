@@ -121,12 +121,12 @@ function! KssLint()
     call s:OkMessage("Blank strings is OK")
   endtry
 
-  try
-    :%s/\n\s*\/\/\s*$//gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Empty comments is OK")
-  endtry
-
+"  try
+"    :%s/\n\s*\/\/\s*$//gc
+"  catch /\m^Vim\%((\a\+)\)\=:E486/
+"    call s:OkMessage("Empty comments is OK")
+"  endtry
+"
 "  try
 "    :%s/\(\u\)\s\+(/\1(/gc
 "  catch /\m^Vim\%((\a\+)\)\=:E486/
@@ -271,17 +271,17 @@ function! KssLint()
     call s:OkMessage("RETURN_POINTER macros not found")
   endtry
 
-  try
-    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*0/!\1/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Null value comparison not found")
-  endtry
-
-  try
-    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0/\1/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Not null value comparison not found")
-  endtry
+"  try
+"    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*0/!\1/gc
+"  catch /\m^Vim\%((\a\+)\)\=:E486/
+"    call s:OkMessage("Null value comparison not found")
+"  endtry
+"
+"  try
+"    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0/\1/gc
+"  catch /\m^Vim\%((\a\+)\)\=:E486/
+"    call s:OkMessage("Not null value comparison not found")
+"  endtry
 
   try
     :%s/if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*break;\n\s*}/BREAK_IF_EFI_ERROR\ \2;/gc
@@ -313,5 +313,5 @@ function! KssLint()
 
 endfun
 
-nnoremap <F4> :call KssLint()<CR>
-nnoremap <F5> :call KssMacroReplace()<CR>
+au FileType c,cpp nnoremap <F4> :call KssLint()<CR>
+au FileType c,cpp nnoremap <F5> :call KssMacroReplace()<CR>
