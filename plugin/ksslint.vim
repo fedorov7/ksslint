@@ -13,15 +13,12 @@ function! s:OkMessage(message)
 ""  :echohl None
 endfun
 
-function s:Substitution(bad, good) range "Step through each line in the range...
-  " echo "pattern: ".a:bad." replacement: ".a:good
-  for linenum in range(a:firstline, a:lastline)
-    let curr_line   = getline(linenum)
-    let replacement = substitute(curr_line, a:bad, a:good,'gc')
-    if curr_line != replacement
-      call setline(linenum, replacement)
-    endif
-  endfor
+function s:Substitution(bad, good) range
+  try
+    execute a:firstline . "," . a:lastline . 's/' . a:bad . '/' . a:good . '/gc'
+  catch /\m^Vim\%((\a\+)\)\=:E486/
+    call s:OkMessage("Substitution not found")
+  endtry
 endfunction
 
 function! s:ReplaceReturnStatus()
