@@ -67,19 +67,31 @@ function! s:ReplaceDbgExit()
   endfor
 endfunction
 
-function! KssMacroReplace()
-  call s:ReplaceReturnStatus()
-  call s:ReplaceReturnBoolean()
-  call s:ReplaceReturnPointer()
-  call s:ReplaceReturnNumber()
-  call s:ReplaceFreePool()
-  call s:ReplaceEfiError()
-  call s:ReplaceGotoEfiError()
-  call s:ReplaceIfNull()
-  call s:ReplaceDbgExit()
-  echohl Special
-  echo "Done"
-  echohl None
+function! s:ReplaceReturnIf()
+  let values = [['EFI_STATUS', ''], ['NUMBER', 'NUMBER_'], ['HEX', 'HEX_'], ['EFI_STRING', 'EFI_STRING_'], ['BOOLEAN', 'BOOLEAN_'], ['POINTER', 'POINTER_']]
+  for value in values
+    :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_'.value[0].'\s*(\(\p\+\));\n\s*}', 'RETURN_'.value[1].'IF\ (\1,\ \2);')
+  endfor
+endfunction
+
+function! s:ReplaceConditions()
+  let conditions = ['if', 'for', 'while']
+  for cond in conditions
+    " fix bracers
+    :%call s:Substitution('\('.cond.'\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
+    " fix brackets
+    :%call s:Substitution('\(\s*\)\('.cond.'\s*(\p\+)\)\s*\n\([^{]\+;\)\n', '\1\2\ \{\r\3\r\1\}\r')
+  endfor
+endfunction
+
+function! s:ReplaceBreakContinue()
+  let values = [['break', 'BREAK'], ['continue', 'CONTINUE']]
+  for value in values
+    " if EFI_ERROR macros
+    :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*'.value[0].';\n\s*}', value[1].'_IF_EFI_ERROR\ \2;')
+    " if macros
+    :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*'.value[0].';\n\s*}', value[1].'_IF\ \1;')
+  endfor
 endfunction
 
 function! KssLint()
@@ -110,15 +122,6 @@ function! KssLint()
 "  " Macros-Bracer spaces
 "  :%call s:Substitution('\(\u\)\s\+(', '\1(')
 
-  " for Bracer
-  :%call s:Substitution('\(for\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
-
-  " while Bracer
-  :%call s:Substitution('\(while\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
-
-  " if Bracer
-  :%call s:Substitution('\(if\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
-
   " Left Bracer
   :%call s:Substitution('(\s\+\(\S\+\)', '(\1')
 
@@ -131,9 +134,6 @@ function! KssLint()
   " Rigth Bracket
   :%call s:Substitution('\(\S\+\)\s\+\]', '\1\]')
 
-  " if bracket
-  :%call s:Substitution('\(\s*\)\(if\s*(\p\+)\)\s*\n\([^{]\+;\)\n', '\1\2\ \{\r\3\r\1\}\r')
-
   " if .. else bracket
   :%call s:Substitution('\(}\)\s*\n\s*else', '\1\ else')
 
@@ -143,47 +143,35 @@ function! KssLint()
   " #define macros
   :%call s:Substitution('\(#define\s\+\w\+\)\s\+\((\(\w\|,\|\s\)\+)\)\(\s\+\S\)', '\1\2\4')
 
-  " RETURN_EFI_STATUS macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STATUS\s*(\(\p\+\));\n\s*}', 'RETURN_IF\ (\1,\ \2);')
-
-  " RETURN_NUMBER macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_NUMBER\s*(\(\p\+\));\n\s*}', 'RETURN_NUMBER_IF\ (\1,\ \2);')
-
-  " RETURN_HEX macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_HEX\s*(\(\p\+\));\n\s*}', 'RETURN_HEX_IF\ (\1,\ \2);')
-
-  " RETURN_EFI_STRING macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STRING\s*(\(\p\+\));\n\s*}', 'RETURN_EFI_STRING_IF\ (\1,\ \2);')
-
-  " RETURN_BOOLEAN macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_BOOLEAN\s*(\(\p\+\));\n\s*}', 'RETURN_BOOLEAN_IF\ (\1,\ \2);')
-
-  " RETURN_POINTER macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_POINTER\s*(\(\p\+\));\n\s*}', 'RETURN_POINTER_IF\ (\1,\ \2);')
-
 "  "Null value comparison
 "  :%call s:Substitution('\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*0', '!\1')
 "
 "  "Not null value comparison
 "  :%call s:Substitution('\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0', '\1')
 
-  " Break if EFI_ERROR macros
-  :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*break;\n\s*}', 'BREAK_IF_EFI_ERROR\ \2;')
-
-  " Continue if EFI_ERROR macros
-  :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*continue;\n\s*}', 'CONTINUE_IF_EFI_ERROR\ \2;')
-
-  " Break if macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*break;\n\s*}', 'BREAK_IF\ \1;')
-
-  " Continue if macros
-  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*continue;\n\s*}', 'CONTINUE_IF\ \1;')
-
   echohl Special
   echo "Done"
   echohl None
 
-endfun
+endfunction
 
-au FileType c,cpp nnoremap <F4> :call KssLint()<CR>
-au FileType c,cpp nnoremap <F5> :call KssMacroReplace()<CR>
+function! KssMacroReplace()
+  call s:ReplaceBreakContinue()
+  call s:ReplaceConditions()
+  call s:ReplaceDbgExit()
+  call s:ReplaceReturnIf()
+  call s:ReplaceReturnStatus()
+  call s:ReplaceReturnBoolean()
+  call s:ReplaceReturnPointer()
+  call s:ReplaceReturnNumber()
+  call s:ReplaceFreePool()
+  call s:ReplaceEfiError()
+  call s:ReplaceGotoEfiError()
+  call s:ReplaceIfNull()
+  call s:KssLint()
+  echohl Special
+  echo "Done"
+  echohl None
+endfunction
+
+au FileType c,cpp nnoremap <F4> :call KssMacroReplace()<CR>
