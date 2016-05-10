@@ -94,7 +94,14 @@ function! s:ReplaceBreakContinue()
   endfor
 endfunction
 
-function! KssLint()
+function! s:WrapOrCondition()
+  let values = ['RETURN', 'BREAK', 'CONTINUE', 'GOTO']
+  for value in values
+    :%call s:Substitution('\(\s*\)\('.value.'_IF\s*\)((\(\p\+\)\s*||\s*\(\p\+\)),\s*\(\p\+\));', '\1\2(\3,\ \5);\r\1\2(\4,\ \5);')
+  endfor
+endfunction
+
+function! s:KssLint()
   " DEBUG macros
   :%call s:Substitution('DEBUG\s*((\_.\=\s*EFI_D_\(\w\+\),\s\=\("\p\+"\),\s\=\(\p\+\)))', 'DBG_\1\ (\2,\ \3)')
 
@@ -156,6 +163,7 @@ function! KssLint()
 endfunction
 
 function! KssMacroReplace()
+  call s:WrapOrCondition()
   call s:ReplaceBreakContinue()
   call s:ReplaceConditions()
   call s:ReplaceDbgExit()
