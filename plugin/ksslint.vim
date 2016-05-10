@@ -60,6 +60,13 @@ function! s:ReplaceIfNull()
   :%call s:Substitution('\(\(\u\|_\)\+_IF\)\s*((\=NULL\s*==\s*\(\w\+\))\=\(\p\+\));', '\1\_NULL (\3\4);')
 endfunction
 
+function! s:ReplaceDbgExit()
+  let values = [['STATUS', 'EFI_STATUS'], ['DEC', 'NUMBER'], ['HEX', 'HEX'], ['STRING', 'EFI_STRING'], ['TF', 'BOOLEAN'], ['POINTER', 'POINTER']]
+  for value in values
+    :%call s:Substitution('DBG_EXIT_'.value[0].'.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_'.value[1].'\ (\1);')
+  endfor
+endfunction
+
 function! KssMacroReplace()
   call s:ReplaceReturnStatus()
   call s:ReplaceReturnBoolean()
@@ -69,6 +76,7 @@ function! KssMacroReplace()
   call s:ReplaceEfiError()
   call s:ReplaceGotoEfiError()
   call s:ReplaceIfNull()
+  call s:ReplaceDbgExit()
   echohl Special
   echo "Done"
   echohl None
@@ -134,24 +142,6 @@ function! KssLint()
 
   " #define macros
   :%call s:Substitution('\(#define\s\+\w\+\)\s\+\((\(\w\|,\|\s\)\+)\)\(\s\+\S\)', '\1\2\4')
-
-  " DBG_EXIT_STATUS macros
-  :%call s:Substitution('DBG_EXIT_STATUS.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_EFI_STATUS\ (\1);')
-
-  " DBG_EXIT_DEC macros
-  :%call s:Substitution('DBG_EXIT_DEC.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_NUMBER\ (\1);')
-
-  " DBG_EXIT_HEX macros
-  :%call s:Substitution('DBG_EXIT_HEX.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_HEX\ (\1);')
-
-  " DBG_EXIT_STRING macros
-  :%call s:Substitution('DBG_EXIT_STRING.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_EFI_STRING\ (\1);')
-
-  " DBG_EXIT_TF macros
-  :%call s:Substitution('DBG_EXIT_TF.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_BOOLEAN\ (\1);')
-
-  " DBG_EXIT_POINTER macros
-  :%call s:Substitution('DBG_EXIT_POINTER.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_POINTER\ (\1);')
 
   " RETURN_EFI_STATUS macros
   :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STATUS\s*(\(\p\+\));\n\s*}', 'RETURN_IF\ (\1,\ \2);')
