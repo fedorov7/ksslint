@@ -60,7 +60,6 @@ function! s:ReplaceIfNull()
   :%call s:Substitution('\(\(\u\|_\)\+_IF\)\s*((\=NULL\s*==\s*\(\w\+\))\=\(\p\+\));', '\1\_NULL (\3\4);')
 endfunction
 
-
 function! KssMacroReplace()
   call s:ReplaceReturnStatus()
   call s:ReplaceReturnBoolean()
@@ -76,233 +75,119 @@ function! KssMacroReplace()
 endfunction
 
 function! KssLint()
-  try
-    :%s/DEBUG\s*((\_.\=\s*EFI_D_\(\w\+\),\s\=\("\p\+"\),\s\=\(\p\+\)))/DBG_\1\ (\2,\ \3)/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DEBUG macros is OK")
-  endtry
+  " DEBUG macros
+  :%call s:Substitution('DEBUG\s*((\_.\=\s*EFI_D_\(\w\+\),\s\=\("\p\+"\),\s\=\(\p\+\)))', 'DBG_\1\ (\2,\ \3)')
 
-  try
-    :%s/\(DEBUG\s*((\_.\=\s*EFI_D_\)\(\w\+\),\s\=\("\p\+"\)))/DBG_\2\ (\3)/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DEBUG short macros is OK")
-  endtry
+  " DEBUG short macros
+  :%call s:Substitution('\(DEBUG\s*((\_.\=\s*EFI_D_\)\(\w\+\),\s\=\("\p\+"\)))', 'DBG_\2\ (\3)')
 
-  try
-    :%s/\(DBG_\w\+\)1/\1/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG short macros is OK")
-  endtry
+  " DBG short macros
+  :%call s:Substitution('\(DBG_\w\+\)1', '\1')
 
-  try
-    :%s/\s\+$//gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Trailing characters not found")
-  endtry
+  " Trailing characters
+  :%call s:Substitution('\s\+$', '')
 
-  try
-    :%s/\t/\ \ /gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Tabular characters not found")
-  endtry
+  " Tabular characters
+  :%call s:Substitution('\t', '\ \ ')
 
-  try
-    :%s/\(\w\)(/\1\ (/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Function-Bracer spaces is OK")
-  endtry
+  " Function-Bracer spaces
+  :%call s:Substitution('\(\w\)(', '\1\ (')
 
-  try
-    :%s/\n\n\n/\r\r/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Blank strings is OK")
-  endtry
+  " Blank strings
+  :%call s:Substitution('\n\n\n', '\r\r')
 
-"  try
-"    :%s/\n\s*\/\/\s*$//gc
-"  catch /\m^Vim\%((\a\+)\)\=:E486/
-"    call s:OkMessage("Empty comments is OK")
-"  endtry
+"  " Empty comments
+"  :%call s:Substitution('\n\s*\/\/\s*$', '')
 "
-"  try
-"    :%s/\(\u\)\s\+(/\1(/gc
-"  catch /\m^Vim\%((\a\+)\)\=:E486/
-"    call s:OkMessage("Macros-Bracer spaces is OK")
-"  endtry
+"  " Macros-Bracer spaces
+"  :%call s:Substitution('\(\u\)\s\+(', '\1(')
+
+  " for Bracer
+  :%call s:Substitution('\(for\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
+
+  " while Bracer
+  :%call s:Substitution('\(while\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
+
+  " if Bracer
+  :%call s:Substitution('\(if\s*(\p\+)\)\s*\n\s*{\s*$', '\1\ {')
+
+  " Left Bracer
+  :%call s:Substitution('(\s\+\(\S\+\)', '(\1')
+
+  " Rigth Bracer
+  :%call s:Substitution('\(\S\+\)\s\+)', '\1)')
+
+  " Left Bracket
+  :%call s:Substitution('\[\s\+\(\S\+\)', '\[\1')
+
+  " Rigth Bracket
+  :%call s:Substitution('\(\S\+\)\s\+\]', '\1\]')
+
+  " if bracket
+  :%call s:Substitution('\(\s*\)\(if\s*(\p\+)\)\s*\n\([^{]\+;\)\n', '\1\2\ \{\r\3\r\1\}\r')
+
+  " if .. else bracket
+  :%call s:Substitution('\(}\)\s*\n\s*else', '\1\ else')
+
+  " else bracket
+  :%call s:Substitution('\(\s*\)\(\}\s\+else\)\(\n\|\s*\)\([^{]\+;\)', '\1\2\ \{\r\4\r\1\}\r')
+
+  " #define macros
+  :%call s:Substitution('\(#define\s\+\w\+\)\s\+\((\(\w\|,\|\s\)\+)\)\(\s\+\S\)', '\1\2\4')
+
+  " DBG_EXIT_STATUS macros
+  :%call s:Substitution('DBG_EXIT_STATUS.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_EFI_STATUS\ (\1);')
+
+  " DBG_EXIT_DEC macros
+  :%call s:Substitution('DBG_EXIT_DEC.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_NUMBER\ (\1);')
+
+  " DBG_EXIT_HEX macros
+  :%call s:Substitution('DBG_EXIT_HEX.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_HEX\ (\1);')
+
+  " DBG_EXIT_STRING macros
+  :%call s:Substitution('DBG_EXIT_STRING.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_EFI_STRING\ (\1);')
+
+  " DBG_EXIT_TF macros
+  :%call s:Substitution('DBG_EXIT_TF.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_BOOLEAN\ (\1);')
+
+  " DBG_EXIT_POINTER macros
+  :%call s:Substitution('DBG_EXIT_POINTER.*\n.*return\s*(\=\(\p\+\))\=;', 'RETURN_POINTER\ (\1);')
+
+  " RETURN_EFI_STATUS macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STATUS\s*(\(\p\+\));\n\s*}', 'RETURN_IF\ (\1,\ \2);')
+
+  " RETURN_NUMBER macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_NUMBER\s*(\(\p\+\));\n\s*}', 'RETURN_NUMBER_IF\ (\1,\ \2);')
+
+  " RETURN_HEX macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_HEX\s*(\(\p\+\));\n\s*}', 'RETURN_HEX_IF\ (\1,\ \2);')
+
+  " RETURN_EFI_STRING macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STRING\s*(\(\p\+\));\n\s*}', 'RETURN_EFI_STRING_IF\ (\1,\ \2);')
+
+  " RETURN_BOOLEAN macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_BOOLEAN\s*(\(\p\+\));\n\s*}', 'RETURN_BOOLEAN_IF\ (\1,\ \2);')
+
+  " RETURN_POINTER macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*RETURN_POINTER\s*(\(\p\+\));\n\s*}', 'RETURN_POINTER_IF\ (\1,\ \2);')
+
+"  "Null value comparison
+"  :%call s:Substitution('\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*0', '!\1')
 "
-  try
-    :%s/\(for\s*(\p\+)\)\s*\n\s*{\s*$/\1\ {/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("for Bracer is OK")
-  endtry
+"  "Not null value comparison
+"  :%call s:Substitution('\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0', '\1')
 
-  try
-    :%s/\(while\s*(\p\+)\)\s*\n\s*{\s*$/\1\ {/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("while Bracer is OK")
-  endtry
+  " Break if EFI_ERROR macros
+  :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*break;\n\s*}', 'BREAK_IF_EFI_ERROR\ \2;')
 
-  try
-    :%s/\(if\s*(\p\+)\)\s*\n\s*{\s*$/\1\ {/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("if Bracer is OK")
-  endtry
+  " Continue if EFI_ERROR macros
+  :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*continue;\n\s*}', 'CONTINUE_IF_EFI_ERROR\ \2;')
 
-  try
-    :%s/(\s\+\(\S\+\)/(\1/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Left Bracer is OK")
-  endtry
+  " Break if macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*break;\n\s*}', 'BREAK_IF\ \1;')
 
-  try
-    :%s/\(\S\+\)\s\+)/\1)/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Rigth Bracer is OK")
-  endtry
-
-  try
-    :%s/\[\s\+\(\S\+\)/\[\1/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Left Bracket is OK")
-  endtry
-
-  try
-    :%s/\(\S\+\)\s\+\]/\1\]/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Rigth Bracket is OK")
-  endtry
-
-  try
-    :%s/\(\s*\)\(if\s*(\p\+)\)\s*\n\([^{]\+;\)\n/\1\2\ \{\r\3\r\1\}\r/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("if bracket is OK")
-  endtry
-
-  try
-    :%s/\(}\)\s*\n\s*else/\1\ else/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("if .. else bracket is OK")
-  endtry
-
-  try
-    :%s/\(\s*\)\(\}\s\+else\)\(\n\|\s*\)\([^{]\+;\)/\1\2\ \{\r\4\r\1\}\r/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("else bracket is OK")
-  endtry
-
-  try
-    :%s/\(#define\s\+\w\+\)\s\+\((\(\w\|,\|\s\)\+)\)\(\s\+\S\)/\1\2\4/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("#define macros OK")
-  endtry
-
-  try
-    :%s/DBG_EXIT_STATUS.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_EFI_STATUS\ (\1);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG_EXIT_STATUS macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STATUS\s*(\(\p\+\));\n\s*}/RETURN_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("RETURN_EFI_STATUS macros not found")
-  endtry
-
-  try
-    :%s/DBG_EXIT_DEC.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_NUMBER\ (\1);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG_EXIT_DEC macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_NUMBER\s*(\(\p\+\));\n\s*}/RETURN_NUMBER_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("RETURN_NUMBER macros not found")
-  endtry
-
-  try
-    :%s/DBG_EXIT_HEX.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_HEX\ (\1);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG_EXIT_HEX macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_HEX\s*(\(\p\+\));\n\s*}/RETURN_HEX_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("RETURN_HEX macros not found")
-  endtry
-
-  try
-    :%s/DBG_EXIT_STRING.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_EFI_STRING\ (\1);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG_EXIT_STRING macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_EFI_STRING\s*(\(\p\+\));\n\s*}/RETURN_EFI_STRING_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("RETURN_EFI_STRING macros not found")
-  endtry
-
-  try
-    :%s/DBG_EXIT_TF.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_BOOLEAN\ (\1);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG_EXIT_TF macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_BOOLEAN\s*(\(\p\+\));\n\s*}/RETURN_BOOLEAN_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("RETURN_BOOLEAN macros not found")
-  endtry
-
-  try
-    :%s/DBG_EXIT_POINTER.*\n.*return\s*(\=\(\p\+\))\=;/RETURN_POINTER\ (\1);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("DBG_EXIT_POINTER macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*RETURN_POINTER\s*(\(\p\+\));\n\s*}/RETURN_POINTER_IF\ (\1,\ \2);/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("RETURN_POINTER macros not found")
-  endtry
-
-"  try
-"    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*==\s*0/!\1/gc
-"  catch /\m^Vim\%((\a\+)\)\=:E486/
-"    call s:OkMessage("Null value comparison not found")
-"  endtry
-"
-"  try
-"    :%s/\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0/\1/gc
-"  catch /\m^Vim\%((\a\+)\)\=:E486/
-"    call s:OkMessage("Not null value comparison not found")
-"  endtry
-
-  try
-    :%s/if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*break;\n\s*}/BREAK_IF_EFI_ERROR\ \2;/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Break if EFI_ERROR macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*break;\n\s*}/BREAK_IF\ \1;/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Break if macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*continue;\n\s*}/CONTINUE_IF_EFI_ERROR\ \2;/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Continue if EFI_ERROR macros not found")
-  endtry
-
-  try
-    :%s/if\s*\((\p\+)\)\s*{\n\s*continue;\n\s*}/CONTINUE_IF\ \1;/gc
-  catch /\m^Vim\%((\a\+)\)\=:E486/
-    call s:OkMessage("Continue if macros not found")
-  endtry
+  " Continue if macros
+  :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*continue;\n\s*}', 'CONTINUE_IF\ \1;')
 
   echohl Special
   echo "Done"
