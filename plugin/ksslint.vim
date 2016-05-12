@@ -56,8 +56,13 @@ function! s:ReplaceGotoEfiError()
 endfunction
 
 function! s:ReplaceIfNull()
-  :%call s:Substitution('\(\(\u\|_\)\+_IF\)\s*((\=\(\w\+\)\s*==\s*NULL)\=\(\p\+\));', '\1\_NULL (\3\4);')
-  :%call s:Substitution('\(\(\u\|_\)\+_IF\)\s*((\=NULL\s*==\s*\(\w\+\))\=\(\p\+\));', '\1\_NULL (\3\4);')
+  let values = ['RETURN_IF', 'RETURN_VOID_IF', 'RETURN_BOOLEAN_IF', 'RETURN_POINTER_IF', 'RETURN_NUMBER_IF', 'BREAK_IF', 'CONTINUE_IF', 'GOTO_IF']
+  let conditions = ['\(\**\w\+\)\s*==\s*NULL', 'NULL\s*==\s*\(\**\w\+\)']
+  for value in values
+    for cond in conditions
+      :%call s:Substitution('\('.value.'\)\s*(\('.cond.'\)\s*,\(\s*\p\+\));', '\1\_NULL\ (\3,\4);')
+    endfor
+  endfor
 endfunction
 
 function! s:ReplaceDbgExit()
@@ -101,6 +106,13 @@ function! s:WrapOrCondition()
   endfor
 endfunction
 
+function! s:DropBracers()
+  let values = ['RETURN_IF', 'RETURN_VOID_IF', 'RETURN_BOOLEAN_IF', 'RETURN_POINTER_IF', 'RETURN_NUMBER_IF', 'BREAK_IF', 'CONTINUE_IF', 'GOTO_IF']
+  for value in values
+    :%call s:Substitution('\('.value.'\s*\)((\(\([^,]\&[^(]\)\+\))\s*,\s*\(\p\+\));', '\1(\2,\ \4);')
+  endfor
+endfunction
+
 function! s:KssLint()
   " DEBUG macros
   :%call s:Substitution('DEBUG\s*((\_.\=\s*EFI_D_\(\w\+\),\s\=\("\p\+"\),\s\=\(\p\+\)))', 'DBG_\1\ (\2,\ \3)')
@@ -120,9 +132,9 @@ function! s:KssLint()
   " Function-Bracer spaces
   :%call s:Substitution('\(\w\)(', '\1\ (')
 
-  " Blank strings
-  :%call s:Substitution('\n\n\n', '\r\r')
-
+"  " Blank strings
+"  :%call s:Substitution('\n\n\n', '\r\r')
+"
 "  " Empty comments
 "  :%call s:Substitution('\n\s*\/\/\s*$', '')
 "
@@ -166,6 +178,7 @@ function! KssMacroReplace()
   call s:WrapOrCondition()
   call s:ReplaceBreakContinue()
   call s:ReplaceConditions()
+  call s:DropBracers()
   call s:ReplaceDbgExit()
   call s:ReplaceReturnIf()
   call s:ReplaceReturnStatus()
