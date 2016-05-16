@@ -48,16 +48,18 @@ function! s:ReplaceFreePool()
 endfunction
 
 function! s:ReplaceEfiError()
-  :%call s:Substitution('RETURN_IF\s*((\=EFI_ERROR\s*(Status))\=,\s*Status);', 'RETURN_IF_EFI_ERROR\ (Status);')
+  :%call s:Substitution('RETURN_IF\s*(EFI_ERROR\s*(\(\k\+\)),\s*\1);', 'RETURN_IF_EFI_ERROR\ (\1);')
+  :%call s:Substitution('if\s*\((EFI_ERROR\s*(\(\k\+\)))\)\s*{\n\s*return\ \2;\n\s*}', 'RETURN_IF_EFI_ERROR\ (\2);')
 endfunction
 
 function! s:ReplaceGotoEfiError()
   :%call s:Substitution('GOTO_IF\s*((\=EFI_ERROR\s*(Status))\=\(,\s*\w\+\),\s*Status\(\p*\));', 'GOTO_IF_EFI_ERROR\ (Status\1\2);')
+  :%call s:Substitution('if\s*\((EFI_ERROR\s*(\(\k\+\)))\)\s*{\n\s*goto\ \(\k\+\);\n\s*}', 'GOTO_IF_EFI_ERROR\ (\2, \3);')
 endfunction
 
 function! s:ReplaceIfNull()
   let values = ['RETURN_IF', 'RETURN_VOID_IF', 'RETURN_BOOLEAN_IF', 'RETURN_POINTER_IF', 'RETURN_NUMBER_IF', 'BREAK_IF', 'CONTINUE_IF', 'GOTO_IF']
-  let conditions = ['\(\**\w\+\)\s*==\s*NULL', 'NULL\s*==\s*\(\**\w\+\)']
+  let conditions = ['\(\**\k\+\)\s*==\s*NULL', 'NULL\s*==\s*\(\**\k\+\)']
   for value in values
     for cond in conditions
       :%call s:Substitution('\('.value.'\)\s*(\('.cond.'\)\s*,\(\s*\p\+\));', '\1\_NULL\ (\3,\4);')
@@ -93,7 +95,7 @@ function! s:ReplaceBreakContinue()
   let values = [['break', 'BREAK'], ['continue', 'CONTINUE']]
   for value in values
     " if EFI_ERROR macros
-    :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\p\+)\))\)\s*{\n\s*'.value[0].';\n\s*}', value[1].'_IF_EFI_ERROR\ \2;')
+    :%call s:Substitution('if\s*\((EFI_ERROR\s*\((\k\+)\))\)\s*{\n\s*'.value[0].';\n\s*}', value[1].'_IF_EFI_ERROR\ \2;')
     " if macros
     :%call s:Substitution('if\s*\((\p\+)\)\s*{\n\s*'.value[0].';\n\s*}', value[1].'_IF\ \1;')
   endfor
