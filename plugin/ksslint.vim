@@ -176,6 +176,10 @@ function! s:KssLint()
 
 endfunction
 
+function! s:ReplaceArrayLength()
+  :%call s:Substitution('sizeof\s*(\(\w\+\))\s*\/\s*sizeof\s*(\1\[0\])', 'ARRAY_LENGTH\ (\1)')
+endfunction
+
 function! KssMacroReplace()
   call s:WrapOrCondition()
   call s:ReplaceBreakContinue()
@@ -191,6 +195,7 @@ function! KssMacroReplace()
   call s:ReplaceEfiError()
   call s:ReplaceGotoEfiError()
   call s:ReplaceIfNull()
+  call s:ReplaceArrayLength()
   call s:KssLint()
   echohl Special
   echo "Done"
