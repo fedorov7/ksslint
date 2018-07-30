@@ -48,7 +48,7 @@ function! s:ReplaceFreePool()
 endfunction
 
 function! s:ReplaceEfiError()
-  :%call s:Substitution('RETURN_IF\s*(EFI_ERROR\s*(\(\k\+\)),\s*\1);', 'RETURN_IF_EFI_ERROR\ (\1);')
+  :%call s:Substitution('RETURN_IF\s*(\+EFI_ERROR\s*(\(\k\+\))\+,\s*\1);', 'RETURN_IF_EFI_ERROR\ (\1);')
   :%call s:Substitution('if\s*\((EFI_ERROR\s*(\(\k\+\)))\)\s*{\n\s*return\ \2;\n\s*}', 'RETURN_IF_EFI_ERROR\ (\2);')
 endfunction
 
@@ -102,9 +102,9 @@ function! s:ReplaceBreakContinue()
 endfunction
 
 function! s:WrapOrCondition()
-  let values = ['RETURN', 'BREAK', 'CONTINUE', 'GOTO']
+  let values = ['RETURN_IF', 'BREAK_IF', 'CONTINUE_IF', 'GOTO_IF', 'if']
   for value in values
-    :%call s:Substitution('\(\s*\)\('.value.'_IF\s*\)((\(\p\+\)\s*||\s*\(\p\+\)),\s*\(\p\+\));', '\1\2(\3,\ \5);\r\1\2(\4,\ \5);')
+    :%call s:Substitution('\(\s*\)\('.value.'\s*\)((\(\p\+\)\s*||\s*\(\p\+\))\s*,\s*\(\p\+\));', '\1\2(\3,\ \5);\r\1\2(\4,\ \5);')
   endfor
 endfunction
 
@@ -181,10 +181,10 @@ function! s:ReplaceArrayLength()
 endfunction
 
 function! KssMacroReplace()
+  call s:DropBracers()
   call s:WrapOrCondition()
   call s:ReplaceBreakContinue()
   call s:ReplaceConditions()
-  call s:DropBracers()
   call s:ReplaceDbgExit()
   call s:ReplaceReturnIf()
   call s:ReplaceReturnStatus()
