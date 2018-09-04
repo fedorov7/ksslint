@@ -170,11 +170,16 @@ function! s:KssLint()
 "  "Not null value comparison
 "  :%call s:Substitution('\(\(\w\|->\|\.\)\+\|[^(]\*([^(]\+)\)\s*!=\s*0', '\1')
 
+  " using SET_VALUE macro
+  :%call s:Substitution('^\(\s*\)\*\(\w\+\)\s*=\s*\(\w\+\);', '\1SET_VALUE\ (\2,\ \3);')
+
   echohl Special
   echo "Done"
   echohl None
 
 endfunction
+
+" remove empty comments: g/^\s*\/\/\s*$/d
 
 function! s:ReplaceArrayLength()
   :%call s:Substitution('sizeof\s*(\(\w\+\))\s*\/\s*sizeof\s*(\1\[0\])', 'ARRAY_LENGTH\ (\1)')
